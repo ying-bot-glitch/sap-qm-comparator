@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+
+# Pytest
+.pytest_cache/
+
+# Temp uploads (runtime-generated)
+/tmp/
+*.tmp
+
+# Claude Flow
+.claude-flow/
+
+# OS
+.DS_Store

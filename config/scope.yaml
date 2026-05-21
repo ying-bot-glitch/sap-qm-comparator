@@ -1,0 +1,13 @@
+plant: ""   # optional — if set, only rows with this WERKS are used from the scope file
+
+scope_materials:
+  source: ""                          # upload via UI; must have MATNR + WERKS columns
+  sheet: "Sheet1"
+  matnr_column: "MATNR"
+  werks_column: "WERKS"
+
+scope_vendors:
+  source: ""                          # upload via UI (optional)
+  sheet: "Sheet1"
+  r3_column: "R3_LIFNR"   # vendor numbers used to filter R/3 Oracle queries
+  s4_column: "S4_LIFNR"   # vendor numbers used to filter S/4 Oracle queries

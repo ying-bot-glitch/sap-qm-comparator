@@ -1,0 +1,44 @@
+# Field comparison rules per SAP table.
+# type: direct   — R/3 value must equal S/4 value (default for unlisted fields)
+# type: mapped   — R/3 value is translated via a mapping table before comparing
+#                  Use mapping_key to reference a file configured in settings.yaml > mapping_files
+# type: default  — S/4 value must equal a fixed expected_value
+# type: ignored  — field is skipped entirely
+
+PLKO:
+  ERDAT: {type: ignored}
+  ERNAM: {type: ignored}
+  AEDAT: {type: ignored}
+  AENAM: {type: ignored}
+  LAEDA: {type: ignored}
+  AENNR: {type: ignored}
+  LIFNR:
+    type: mapped
+    mapping_key: vendor     # resolved from settings.yaml > mapping_files > vendor
+
+PLPO:
+  ERDAT: {type: ignored}
+  ERNAM: {type: ignored}
+  AEDAT: {type: ignored}
+  AENAM: {type: ignored}
+
+PLMK:
+  ERDAT: {type: ignored}
+  ERNAM: {type: ignored}
+  AEDAT: {type: ignored}
+  AENAM: {type: ignored}
+  STELA:
+    type: mapped
+    mapping_key: sampling_procedure   # resolved from settings.yaml > mapping_files > sampling_procedure
+  # DMR field — configure the actual SAP field name for your system:
+  # QMFELD:
+  #   type: mapped
+  #   mapping_key: dmr
+
+MAPL:
+  ERDAT: {type: ignored}
+  ERNAM: {type: ignored}
+  AEDAT: {type: ignored}
+  LIFNR:
+    type: mapped
+    mapping_key: vendor

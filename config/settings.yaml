@@ -1,0 +1,52 @@
+datasources:
+  r3:
+    type: oracle              # oracle | excel | csv
+    service: "REDLake_ZeusP_Consumer_DALI.world"
+    user: ""                  # user-filled
+    password: ""              # set via env var R3_DB_PASSWORD
+    schema: "mard_qmap_vert_sys"
+    sap_machine: ""           # user-filled (e.g. poe)
+
+  s4:
+    type: oracle
+    service: "REDLake_ZeusQ_Consumer_DALI.world"
+    user: ""
+    password: ""              # set via env var S4_DB_PASSWORD
+    schema: "mard_qmap_vert_sys"
+    sap_machine: ""           # user-filled (e.g. s4p)
+
+key_mapping:
+  source: ""                  # .csv or .xlsx — upload via UI
+  sheet: "Sheet1"
+  r3_plnnr_col: "R3_PLNNR"
+  r3_plnkn_col: "R3_PLNKN"
+  s4_plnnr_col: "S4_PLNNR"
+  s4_plnkn_col: "S4_PLNKN"
+
+# Value mapping files — referenced in field_rules.yaml via mapping_key
+mapping_files:
+  vendor:
+    source: ""              # upload via UI
+    sheet: "Sheet1"
+    r3_key: "R3_LIFNR"
+    s4_key: "S4_LIFNR"
+  dmr:
+    source: ""
+    sheet: "Sheet1"
+    r3_key: "R3_DMR"
+    s4_key: "S4_DMR"
+  sampling_procedure:
+    source: ""
+    sheet: "Sheet1"
+    r3_key: "R3_PROC"
+    s4_key: "S4_PROC"
+
+report:
+  include_matches: false
+
+comparison:
+  layers:
+    - PLKO
+    - PLPO
+    - PLMK
+    - MAPL

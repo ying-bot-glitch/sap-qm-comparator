@@ -55,7 +55,7 @@ if page == "① Data Source Config":
 
     # ── Datasource forms ─────────────────────────────────────────── #
     def source_form(side: str, cfg: dict) -> dict:
-        st.subheader(f"{side} System")
+        st.subheader(side)
         src_type = st.selectbox(
             "Source Type", ["oracle", "excel", "csv"],
             index=["oracle", "excel", "csv"].index(cfg.get("type", "oracle")),

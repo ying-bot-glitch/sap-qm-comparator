@@ -2,8 +2,6 @@ datasources:
   r3:
     type: oracle              # oracle | excel | csv
     service: "REDLake_ZeusP_Consumer_DALI.world"
-    host: ""                  # Oracle hostname, e.g. oracle.company.com
-    port: "1521"
     user: ""                  # user-filled
     password: ""              # set via env var R3_DB_PASSWORD
     schema: "mard_qmap_vert_sys"
@@ -12,8 +10,6 @@ datasources:
   s4:
     type: oracle
     service: "REDLake_ZeusQ_Consumer_DALI.world"
-    host: ""
-    port: "1521"
     user: ""
     password: ""              # set via env var S4_DB_PASSWORD
     schema: "mard_qmap_vert_sys"

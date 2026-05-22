@@ -93,14 +93,14 @@ if page == "① Data Source Config":
     ds = settings.get("datasources", {})
 
     with col1:
-        r3_cfg = source_form("R3", ds.get("r3", {}))
-        if st.button("Test R/3 Connection"):
+        r3_cfg = source_form("Before", ds.get("r3", {}))
+        if st.button("Test Before Connection"):
             ok, msg = make_loader(r3_cfg).test_connection()
             (st.success if ok else st.error)(msg)
 
     with col2:
-        s4_cfg = source_form("S4", ds.get("s4", {}))
-        if st.button("Test S/4 Connection"):
+        s4_cfg = source_form("After", ds.get("s4", {}))
+        if st.button("Test After Connection"):
             ok, msg = make_loader(s4_cfg).test_connection()
             (st.success if ok else st.error)(msg)
 

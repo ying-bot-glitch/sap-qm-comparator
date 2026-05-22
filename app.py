@@ -64,6 +64,11 @@ if page == "① Data Source Config":
         out: dict = {"type": src_type}
 
         if src_type == "oracle":
+            st.info(
+                "Oracle connections require Oracle Instant Client and must be run **locally** "
+                "(`streamlit run app.py`). When sharing via the cloud link, use Excel/CSV upload instead.",
+                icon="ℹ️",
+            )
             current_svc = cfg.get("service", SERVICE_OPTIONS[0])
             svc_idx = SERVICE_OPTIONS.index(current_svc) if current_svc in SERVICE_OPTIONS else 0
             out["service"]     = st.selectbox("Oracle Service Name", SERVICE_OPTIONS, index=svc_idx, key=f"{side}_svc")

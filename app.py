@@ -67,6 +67,9 @@ if page == "① Data Source Config":
             current_svc = cfg.get("service", SERVICE_OPTIONS[0])
             svc_idx = SERVICE_OPTIONS.index(current_svc) if current_svc in SERVICE_OPTIONS else 0
             out["service"]     = st.selectbox("Oracle Service Name", SERVICE_OPTIONS, index=svc_idx, key=f"{side}_svc")
+            hc1, hc2 = st.columns([3, 1])
+            out["host"]        = hc1.text_input("Oracle Host", cfg.get("host", ""), key=f"{side}_host")
+            out["port"]        = hc2.text_input("Port", cfg.get("port", "1521"), key=f"{side}_port")
             out["user"]        = st.text_input("Username", cfg.get("user", ""), key=f"{side}_usr")
             out["password"]    = st.text_input(
                 "Password",

@@ -21,13 +21,19 @@ class OracleLoader(AbstractLoader):
 
     def __init__(self, config: dict):
         self.service = config["service"]
+        self.host = config.get("host", "")
+        self.port = int(config.get("port", 1521))
         self.user = config["user"]
         self.password = config["password"]
         self.schema = config["schema"]
         self.sap_machine = config["sap_machine"]
 
     def _connect(self):
-        return oracledb.connect(user=self.user, password=self.password, dsn=self.service)
+        if self.host:
+            dsn = f"{self.host}:{self.port}/{self.service}"
+        else:
+            dsn = self.service
+        return oracledb.connect(user=self.user, password=self.password, dsn=dsn)
 
     def test_connection(self) -> Tuple[bool, str]:
         try:

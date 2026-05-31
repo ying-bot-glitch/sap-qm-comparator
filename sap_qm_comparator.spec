@@ -1,8 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 
 # Collect all Streamlit static assets (HTML/JS/CSS frontend)
 st_datas = collect_data_files('streamlit', include_py_files=False)
+
+# Copy package metadata (needed by streamlit's version detection)
+meta_datas = copy_metadata('streamlit')
+meta_datas += copy_metadata('pandas')
+meta_datas += copy_metadata('altair')
+meta_datas += copy_metadata('pyarrow')
 
 a = Analysis(
     ['launcher.py'],
@@ -13,6 +19,7 @@ a = Analysis(
         ('config',          'config'),
         ('src',             'src'),
         *st_datas,
+        *meta_datas,
     ],
     hiddenimports=[
         # Streamlit internals

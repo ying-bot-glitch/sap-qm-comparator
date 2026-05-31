@@ -21,6 +21,7 @@ a = Analysis(
     hiddenimports=[
         'streamlit', 'streamlit.web.cli', 'streamlit.web.server',
         'streamlit.runtime', 'streamlit.runtime.scriptrunner',
+        'streamlit.runtime.scriptrunner.magic_funcs',
         'streamlit.runtime.state', 'streamlit.components.v1',
         'streamlit.elements', 'pandas', 'openpyxl', 'xlsxwriter',
         'oracledb', 'yaml', 'dotenv', 'jinja2', 'altair', 'pyarrow',

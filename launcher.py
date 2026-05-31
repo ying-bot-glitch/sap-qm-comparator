@@ -11,6 +11,7 @@ if getattr(sys, 'frozen', False):
     os.chdir(_base)                                          # make relative paths work
     os.environ['STREAMLIT_SERVER_FILE_WATCHER_TYPE'] = 'none'
     os.environ['STREAMLIT_BROWSER_GATHER_USAGE_STATS'] = 'false'
+    os.environ['STREAMLIT_GLOBAL_DEVELOPMENT_MODE'] = 'false'
     if _base not in sys.path:
         sys.path.insert(0, _base)
 else:
@@ -36,5 +37,6 @@ if __name__ == '__main__':
         '--server.headless=true',
         '--server.port=8501',
         '--browser.gatherUsageStats=false',
+        '--global.developmentMode=false',
     ]
     sys.exit(stcli.main())

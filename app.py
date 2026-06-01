@@ -87,20 +87,15 @@ if page == "① Data Source Config":
             existing = cfg.get("file_mapping", {})
             file_mapping: dict = {}
             for tbl in FILE_TABLES:
+                state_key = f"file_{side}_{tbl}"
                 up = st.file_uploader(f"{tbl.upper()} file", type=accept, key=f"{side}_{tbl}_upload")
                 if up:
                     saved_path = _save_upload(up)
-                    file_mapping[tbl] = saved_path
-                    # Persist immediately so navigation doesn't lose the upload
-                    ds_key = "r3" if side == "Before" else "s4"
-                    st.session_state.setdefault("settings", {}).setdefault(
-                        "datasources", {}).setdefault(ds_key, {}).setdefault(
-                        "file_mapping", {})[tbl] = saved_path
-                else:
-                    saved = existing.get(tbl, "")
-                    file_mapping[tbl] = saved
-                    if saved:
-                        st.caption(f"✓ Saved: {os.path.basename(saved)}")
+                    st.session_state[state_key] = saved_path
+                path = st.session_state.get(state_key, existing.get(tbl, ""))
+                file_mapping[tbl] = path
+                if path and not up:
+                    st.caption(f"✓ {os.path.basename(path)}")
             out["file_mapping"] = file_mapping
 
         return out
@@ -138,7 +133,10 @@ if page == "① Data Source Config":
             "Upload one file with MATNR and WERKS columns. "
             "Plant filter is optional — leave blank to use all plants in the file."
         )
-        mat_file = st.file_uploader("Material+Plant Scope file (CSV or Excel)", type=["xlsx", "csv"], key="mat_scope")
+        _mat_up = st.file_uploader("Material+Plant Scope file (CSV or Excel)", type=["xlsx", "csv"], key="mat_scope")
+        if _mat_up:
+            st.session_state["file_mat_scope"] = _save_upload(_mat_up)
+        mat_file = _mat_up  # keep for save button logic below
         mc1, mc2, mc3 = st.columns(3)
         matnr_col = mc1.text_input("MATNR column", scope_cfg.get("scope_materials", {}).get("matnr_column", "MATNR"), key="mat_matnr")
         werks_col  = mc2.text_input("WERKS column",  scope_cfg.get("scope_materials", {}).get("werks_column", "WERKS"), key="mat_werks")
@@ -149,7 +147,10 @@ if page == "① Data Source Config":
             "Upload one file with R/3 and S/4 vendor numbers. "
             "If not uploaded, all MAPL records within the material+plant scope are included."
         )
-        ven_file = st.file_uploader("Vendor Scope file (CSV or Excel)", type=["xlsx", "csv"], key="ven_scope")
+        _ven_up = st.file_uploader("Vendor Scope file (CSV or Excel)", type=["xlsx", "csv"], key="ven_scope")
+        if _ven_up:
+            st.session_state["file_ven_scope"] = _save_upload(_ven_up)
+        ven_file = _ven_up
         vc1, vc2 = st.columns(2)
         ven_r3_col = vc1.text_input("R/3 vendor column", scope_cfg.get("scope_vendors", {}).get("r3_column", "R3_LIFNR"), key="ven_r3")
         ven_s4_col = vc2.text_input("S/4 vendor column", scope_cfg.get("scope_vendors", {}).get("s4_column", "S4_LIFNR"), key="ven_s4")
@@ -159,8 +160,10 @@ if page == "① Data Source Config":
 
     # ── Save ────────────────────────────────────────────────────── #
     if st.button("Save Configuration", type="primary"):
-        mat_path = _save_upload(mat_file) if mat_file else scope_cfg.get("scope_materials", {}).get("source", "")
-        ven_path = _save_upload(ven_file) if ven_file else scope_cfg.get("scope_vendors", {}).get("source", "")
+        mat_path = (st.session_state.get("file_mat_scope")
+                    or scope_cfg.get("scope_materials", {}).get("source", ""))
+        ven_path = (st.session_state.get("file_ven_scope")
+                    or scope_cfg.get("scope_vendors", {}).get("source", ""))
         st.session_state["settings"] = {**settings, "datasources": {"r3": r3_cfg, "s4": s4_cfg}}
         st.session_state["scope_cfg"] = {
             "plant": plant,

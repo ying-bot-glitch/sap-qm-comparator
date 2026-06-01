@@ -88,7 +88,19 @@ if page == "① Data Source Config":
             file_mapping: dict = {}
             for tbl in FILE_TABLES:
                 up = st.file_uploader(f"{tbl.upper()} file", type=accept, key=f"{side}_{tbl}_upload")
-                file_mapping[tbl] = _save_upload(up) if up else existing.get(tbl, "")
+                if up:
+                    saved_path = _save_upload(up)
+                    file_mapping[tbl] = saved_path
+                    # Persist immediately so navigation doesn't lose the upload
+                    ds_key = "r3" if side == "Before" else "s4"
+                    st.session_state.setdefault("settings", {}).setdefault(
+                        "datasources", {}).setdefault(ds_key, {}).setdefault(
+                        "file_mapping", {})[tbl] = saved_path
+                else:
+                    saved = existing.get(tbl, "")
+                    file_mapping[tbl] = saved
+                    if saved:
+                        st.caption(f"✓ Saved: {os.path.basename(saved)}")
             out["file_mapping"] = file_mapping
 
         return out
@@ -99,13 +111,13 @@ if page == "① Data Source Config":
 
     with col1:
         r3_cfg = source_form("Before", ds.get("r3", {}))
-        if st.button("Test Before Connection"):
+        if st.button("Test Connection", key="test_r3"):
             ok, msg = make_loader(r3_cfg).test_connection()
             (st.success if ok else st.error)(msg)
 
     with col2:
         s4_cfg = source_form("After", ds.get("s4", {}))
-        if st.button("Test After Connection"):
+        if st.button("Test Connection", key="test_s4"):
             ok, msg = make_loader(s4_cfg).test_connection()
             (st.success if ok else st.error)(msg)
 

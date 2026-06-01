@@ -94,6 +94,26 @@ class OracleLoader(AbstractLoader):
         except Exception as e:
             return False, str(e)
 
+    def discover_systems(self) -> Tuple[bool, str, List[str]]:
+        """Return (ok, msg, list_of_sys_suffixes) by querying all_views."""
+        sql = (
+            "SELECT DISTINCT REGEXP_SUBSTR(view_name, '[^_]+$') AS sys_suffix "
+            f"FROM all_views "
+            f"WHERE owner = UPPER('{self.schema}') "
+            f"  AND view_name LIKE 'V_REP_QMAP_VERT_SYS_%' "
+            "ORDER BY 1"
+        )
+        try:
+            conn = self._connect()
+            try:
+                df = self._fetch(conn, sql)
+            finally:
+                conn.close()
+            suffixes = df.iloc[:, 0].dropna().tolist()
+            return True, f"Found {len(suffixes)} system(s)", suffixes
+        except Exception as e:
+            return False, str(e), []
+
     def _table(self, sap_table: str) -> str:
         return build_table_name(self.schema, sap_table, self.sap_machine)
 
@@ -118,6 +138,14 @@ class OracleLoader(AbstractLoader):
             df = self._fetch(conn, sql)
             df.columns = [c.upper() for c in df.columns]
             return df.drop(columns=["RN"], errors="ignore")
+        except Exception as e:
+            full_table = self._table(sap_table)
+            raise RuntimeError(
+                f"Query failed for table: {full_table}\n"
+                f"Check that SAP Machine ('{self.sap_machine}') and Schema ('{self.schema}') are correct.\n"
+                f"Use 'Discover Systems' button to see available values.\n"
+                f"Detail: {e}"
+            ) from e
         finally:
             conn.close()
 

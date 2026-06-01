@@ -133,15 +133,41 @@ if page == "① Data Source Config":
 
     with col1:
         r3_cfg = source_form("Before", ds.get("r3", {}))
-        if st.button("Test Connection", key="test_r3"):
+        btn_col1, btn_col2 = st.columns(2)
+        if btn_col1.button("Test Connection", key="test_r3"):
             ok, msg = make_loader(r3_cfg).test_connection()
             (st.success if ok else st.error)(msg)
+        if btn_col2.button("Discover Systems", key="disc_r3"):
+            if r3_cfg.get("type") == "oracle":
+                from src.loaders.oracle_loader import OracleLoader
+                ok, msg, systems = OracleLoader(r3_cfg).discover_systems()
+                if ok and systems:
+                    st.success(f"Available SAP Machine values: **{', '.join(systems)}**")
+                elif ok:
+                    st.warning("No matching views found — check schema name.")
+                else:
+                    st.error(msg)
+            else:
+                st.info("Discover only applies to Oracle sources.")
 
     with col2:
         s4_cfg = source_form("After", ds.get("s4", {}))
-        if st.button("Test Connection", key="test_s4"):
+        btn_col3, btn_col4 = st.columns(2)
+        if btn_col3.button("Test Connection", key="test_s4"):
             ok, msg = make_loader(s4_cfg).test_connection()
             (st.success if ok else st.error)(msg)
+        if btn_col4.button("Discover Systems", key="disc_s4"):
+            if s4_cfg.get("type") == "oracle":
+                from src.loaders.oracle_loader import OracleLoader
+                ok, msg, systems = OracleLoader(s4_cfg).discover_systems()
+                if ok and systems:
+                    st.success(f"Available SAP Machine values: **{', '.join(systems)}**")
+                elif ok:
+                    st.warning("No matching views found — check schema name.")
+                else:
+                    st.error(msg)
+            else:
+                st.info("Discover only applies to Oracle sources.")
 
     # ── Oracle Extraction Scope ──────────────────────────────────── #
     any_oracle_live = (

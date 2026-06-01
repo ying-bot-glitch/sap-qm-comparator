@@ -1,6 +1,5 @@
 import os
 import tempfile
-import shutil
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
@@ -21,12 +20,42 @@ LAYERS = ["PLKO", "PLPO", "PLMK", "MAPL"]
 # ------------------------------------------------------------------ #
 # Helpers                                                              #
 # ------------------------------------------------------------------ #
-def _save_upload(uploaded) -> str:
-    ext = ".xlsx" if uploaded.name.endswith(".xlsx") else ".csv"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
-    shutil.copyfileobj(uploaded, tmp)
-    tmp.flush()
-    return tmp.name
+def _persist_upload(key: str, up) -> tuple:
+    """Save uploaded file bytes to session state; recreate temp file if needed.
+    Returns (path, filename) — path is '' when nothing has been uploaded yet.
+    """
+    bkey = f"_bytes_{key}"
+    nkey = f"_name_{key}"
+    pkey = f"_path_{key}"
+
+    if up is not None:
+        data = up.read()
+        st.session_state[bkey] = data
+        st.session_state[nkey] = up.name
+        ext = ".xlsx" if up.name.endswith(".xlsx") else ".csv"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+        tmp.write(data)
+        tmp.flush()
+        tmp.close()
+        st.session_state[pkey] = tmp.name
+
+    path = st.session_state.get(pkey, "")
+    name = st.session_state.get(nkey, "")
+
+    # Recreate temp file from bytes if the previous temp path was cleaned up
+    if path and not os.path.exists(path):
+        data = st.session_state.get(bkey)
+        if data:
+            fname = st.session_state.get(nkey, "file")
+            ext = ".xlsx" if fname.endswith(".xlsx") else ".csv"
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+            tmp.write(data)
+            tmp.flush()
+            tmp.close()
+            path = tmp.name
+            st.session_state[pkey] = path
+
+    return path, name
 
 
 def _init_state():
@@ -87,15 +116,13 @@ if page == "① Data Source Config":
             existing = cfg.get("file_mapping", {})
             file_mapping: dict = {}
             for tbl in FILE_TABLES:
-                state_key = f"file_{side}_{tbl}"
                 up = st.file_uploader(f"{tbl.upper()} file", type=accept, key=f"{side}_{tbl}_upload")
-                if up:
-                    saved_path = _save_upload(up)
-                    st.session_state[state_key] = saved_path
-                path = st.session_state.get(state_key, existing.get(tbl, ""))
+                path, fname = _persist_upload(f"{side}_{tbl}", up)
+                if not path:
+                    path = existing.get(tbl, "")
                 file_mapping[tbl] = path
-                if path and not up:
-                    st.caption(f"✓ {os.path.basename(path)}")
+                if path and up is None:
+                    st.caption(f"✓ {fname or os.path.basename(path)}")
             out["file_mapping"] = file_mapping
 
         return out
@@ -133,10 +160,11 @@ if page == "① Data Source Config":
             "Upload one file with MATNR and WERKS columns. "
             "Plant filter is optional — leave blank to use all plants in the file."
         )
-        _mat_up = st.file_uploader("Material+Plant Scope file (CSV or Excel)", type=["xlsx", "csv"], key="mat_scope")
-        if _mat_up:
-            st.session_state["file_mat_scope"] = _save_upload(_mat_up)
-        mat_file = _mat_up  # keep for save button logic below
+        _mat_up = st.file_uploader("Material+Plant Scope file (CSV or Excel)", type=["xlsx", "csv"], key="mat_scope_up")
+        mat_scope_path, mat_scope_name = _persist_upload("mat_scope", _mat_up)
+        if mat_scope_path and _mat_up is None:
+            st.caption(f"✓ {mat_scope_name or os.path.basename(mat_scope_path)}")
+
         mc1, mc2, mc3 = st.columns(3)
         matnr_col = mc1.text_input("MATNR column", scope_cfg.get("scope_materials", {}).get("matnr_column", "MATNR"), key="mat_matnr")
         werks_col  = mc2.text_input("WERKS column",  scope_cfg.get("scope_materials", {}).get("werks_column", "WERKS"), key="mat_werks")
@@ -147,23 +175,22 @@ if page == "① Data Source Config":
             "Upload one file with R/3 and S/4 vendor numbers. "
             "If not uploaded, all MAPL records within the material+plant scope are included."
         )
-        _ven_up = st.file_uploader("Vendor Scope file (CSV or Excel)", type=["xlsx", "csv"], key="ven_scope")
-        if _ven_up:
-            st.session_state["file_ven_scope"] = _save_upload(_ven_up)
-        ven_file = _ven_up
+        _ven_up = st.file_uploader("Vendor Scope file (CSV or Excel)", type=["xlsx", "csv"], key="ven_scope_up")
+        ven_scope_path, ven_scope_name = _persist_upload("ven_scope", _ven_up)
+        if ven_scope_path and _ven_up is None:
+            st.caption(f"✓ {ven_scope_name or os.path.basename(ven_scope_path)}")
+
         vc1, vc2 = st.columns(2)
         ven_r3_col = vc1.text_input("R/3 vendor column", scope_cfg.get("scope_vendors", {}).get("r3_column", "R3_LIFNR"), key="ven_r3")
         ven_s4_col = vc2.text_input("S/4 vendor column", scope_cfg.get("scope_vendors", {}).get("s4_column", "S4_LIFNR"), key="ven_s4")
     else:
-        mat_file = ven_file = None
+        mat_scope_path = ven_scope_path = ""
         matnr_col = werks_col = plant = ven_r3_col = ven_s4_col = ""
 
     # ── Save ────────────────────────────────────────────────────── #
     if st.button("Save Configuration", type="primary"):
-        mat_path = (st.session_state.get("file_mat_scope")
-                    or scope_cfg.get("scope_materials", {}).get("source", ""))
-        ven_path = (st.session_state.get("file_ven_scope")
-                    or scope_cfg.get("scope_vendors", {}).get("source", ""))
+        mat_path = mat_scope_path or scope_cfg.get("scope_materials", {}).get("source", "")
+        ven_path = ven_scope_path or scope_cfg.get("scope_vendors", {}).get("source", "")
         st.session_state["settings"] = {**settings, "datasources": {"r3": r3_cfg, "s4": s4_cfg}}
         st.session_state["scope_cfg"] = {
             "plant": plant,
@@ -201,27 +228,36 @@ elif page == "② Run Comparison":
     km_cfg = settings.get("key_mapping", {})
     with st.expander("PLNNR / PLNKN Key Mapping"):
         st.caption("Preload or postload file linking R/3 plan numbers to S/4 plan numbers.")
-        km_file  = st.file_uploader("File (CSV or Excel)", type=["xlsx", "csv"], key="km_file")
+        km_file  = st.file_uploader("File (CSV or Excel)", type=["xlsx", "csv"], key="km_file_up")
+        km_path, km_name = _persist_upload("km_file", km_file)
+        if not km_path:
+            km_path = km_cfg.get("source", "")
+        if km_path and km_file is None:
+            st.caption(f"✓ {km_name or os.path.basename(km_path)}")
         km_sheet = st.text_input("Sheet name (Excel only)", km_cfg.get("sheet", "Sheet1"), key="km_sheet")
         c1, c2, c3, c4 = st.columns(4)
         col_r3nr = c1.text_input("R/3 PLNNR col", km_cfg.get("r3_plnnr_col", "R3_PLNNR"), key="km_r3nr")
         col_r3kn = c2.text_input("R/3 PLNKN col", km_cfg.get("r3_plnkn_col", "R3_PLNKN"), key="km_r3kn")
         col_s4nr = c3.text_input("S/4 PLNNR col", km_cfg.get("s4_plnnr_col", "S4_PLNNR"), key="km_s4nr")
         col_s4kn = c4.text_input("S/4 PLNKN col", km_cfg.get("s4_plnkn_col", "S4_PLNKN"), key="km_s4kn")
-    km_path = _save_upload(km_file) if km_file else km_cfg.get("source", "")
 
     mf_cfg = settings.get("mapping_files", {})
 
     def mapping_form(key: str, label: str, default_r3: str, default_s4: str) -> dict:
         cfg = mf_cfg.get(key, {})
         with st.expander(label):
-            up     = st.file_uploader("File (CSV or Excel)", type=["xlsx", "csv"], key=f"mf_{key}")
+            up = st.file_uploader("File (CSV or Excel)", type=["xlsx", "csv"], key=f"mf_{key}_up")
+            path, fname = _persist_upload(f"mf_{key}", up)
+            if not path:
+                path = cfg.get("source", "")
+            if path and up is None:
+                st.caption(f"✓ {fname or os.path.basename(path)}")
             sheet  = st.text_input("Sheet name (Excel only)", cfg.get("sheet", "Sheet1"), key=f"mf_{key}_sheet")
             c1, c2 = st.columns(2)
             r3_col = c1.text_input("R/3 value column", cfg.get("r3_key", default_r3), key=f"mf_{key}_r3")
             s4_col = c2.text_input("S/4 value column", cfg.get("s4_key", default_s4), key=f"mf_{key}_s4")
         return {
-            "source": _save_upload(up) if up else cfg.get("source", ""),
+            "source": path,
             "sheet": sheet,
             "r3_key": r3_col,
             "s4_key": s4_col,
